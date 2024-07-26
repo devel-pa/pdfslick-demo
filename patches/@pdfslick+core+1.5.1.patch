@@ -1,0 +1,112 @@
+diff --git a/node_modules/@pdfslick/core/dist/esm/index.js b/node_modules/@pdfslick/core/dist/esm/index.js
+index c149d82..14e0f1e 100644
+--- a/node_modules/@pdfslick/core/dist/esm/index.js
++++ b/node_modules/@pdfslick/core/dist/esm/index.js
+@@ -1748,6 +1748,7 @@ class PDFPrintService {
+         this.currentPage = -1;
+         // The temporary canvas where renderPage paints one page at a time.
+         this.scratchCanvas = document.createElement("canvas");
++        this.urls = [];
+     }
+     layout() {
+         this.throwIfInactive();
+@@ -1792,6 +1793,8 @@ class PDFPrintService {
+         this.scratchCanvas.width = this.scratchCanvas.height = 0;
+         this.scratchCanvas = null;
+         activeService = null;
++        this.urls.forEach(URL.revokeObjectURL);
++        this.urls = [];
+         ensureOverlay().then(function () {
+             if (overlayManager.active === dialog) {
+                 overlayManager.close(dialog);
+@@ -1827,8 +1830,11 @@ class PDFPrintService {
+         const img = document.createElement("img");
+         const scratchCanvas = this.scratchCanvas;
+         if ("toBlob" in scratchCanvas) {
++            var that = this;
+             scratchCanvas.toBlob(function (blob) {
+-                img.src = URL.createObjectURL(blob);
++                var crtUrl = URL.createObjectURL(blob);
++                that.urls.push(crtUrl);
++                img.src = crtUrl;
+             });
+         }
+         else {
+@@ -1854,9 +1860,18 @@ class PDFPrintService {
+                     resolve();
+                     return;
+                 }
+-                print.call(window);
+-                // Delay promise resolution in case print() was not synchronous.
+-                setTimeout(resolve, 20); // Tidy-up.
++                // changes
++                var myframe = window.frames['printDocumentIframe'];
++                myframe.contentWindow.document.write(this.printContainer.outerHTML);
++                myframe.contentWindow.document.close();
++                setTimeout(function () {
++                    myframe.contentWindow.focus();
++                    myframe.contentWindow.print();
++                    setTimeout(resolve, 20); // Tidy-up.
++                }, 20)
++                //
++
++
+             }, 0);
+         });
+     }
+@@ -1877,6 +1892,16 @@ window.print = function () {
+     }
+     ensureOverlay().then(function () {
+         if (activeService) {
++            if (dialog) {
++                return overlayManager.unregister(dialog).then(() => {
++                    dialog = document.getElementById("printServiceDialog");
++                    overlayManager.register(dialog,
++                        /* canForceClose = */ true)
++                        .then(() => overlayManager.open(dialog))
++                        .catch(e => console.log);
++                }).catch(e => console.log);
++            }
++
+             overlayManager.open(dialog);
+         }
+     });
+@@ -1891,6 +1916,7 @@ window.print = function () {
+                     overlayManager.close(dialog);
+                 }
+             });
++            print();
+             return; // eslint-disable-line no-unsafe-finally
+         }
+         const activeServiceOnEntry = activeService;
+@@ -1965,9 +1991,12 @@ function ensureOverlay() {
+         if (!overlayManager) {
+             throw new Error("The overlay manager has not yet been initialized.");
+         }
++        dialog && overlayManager.unregister(dialog);
+         dialog || (dialog = document.getElementById("printServiceDialog"));
++
+         overlayPromise = overlayManager.register(dialog,
+         /* canForceClose = */ true);
++
+         document.getElementById("printCancel").onclick = abort;
+         dialog.addEventListener("close", abort);
+     }
+@@ -2624,6 +2653,7 @@ class PDFSlick {
+             });
+             return;
+         }
++
+         const pagesOverview = this.viewer.getPagesOverview();
+         const printContainer = document.getElementById("printContainer");
+         const printResolution = this.printResolution;
+@@ -2651,6 +2681,9 @@ class PDFSlick {
+         // }
+         var _a;
+         if (this.printService) {
++            window.frames['printDocumentIframe'].contentWindow.document.write();
++            window.frames['printDocumentIframe'].contentWindow.document.close();
++
+             this.printService.destroy();
+             this.printService = null;
+             (_a = this.document) === null || _a === void 0 ? void 0 : _a.annotationStorage.resetModified();

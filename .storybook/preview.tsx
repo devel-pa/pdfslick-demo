@@ -1,4 +1,6 @@
+import React from "react";
 import type { Preview } from "@storybook/react";
+import PrintUtils from "../src/components/PrintUtils";
 
 const preview: Preview = {
   parameters: {
@@ -9,6 +11,16 @@ const preview: Preview = {
       },
     },
   },
+  decorators: [
+    (Story) => {
+      return (
+        <div>
+          <Story />
+          <PrintUtils />
+        </div>
+      );
+    },
+  ],
 };
 
 export default preview;

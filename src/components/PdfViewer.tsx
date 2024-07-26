@@ -1,4 +1,5 @@
 import "@pdfslick/react/dist/pdf_viewer.css";
+
 import { usePDFSlick } from "@pdfslick/react";
 import { useEffect } from "react";
 
@@ -20,27 +21,22 @@ const PdfViewer = ({ pdfFilePath }: Props) => {
 
   const store = usePDFSlickStore();
 
-  useEffect(() => {
-    console.log(
-      viewerRef,
-      usePDFSlickStore,
-      PDFSlickViewer,
-      isDocumentLoaded,
-      error,
-      store
-    );
-  }, [
-    viewerRef,
-    usePDFSlickStore,
-    PDFSlickViewer,
-    isDocumentLoaded,
-    error,
-    store,
-  ]);
-
   const printHandler = () => {
     store.pdfSlick?.triggerPrinting();
   };
+
+  useEffect(() => {
+    window.onbeforeprint = (e) => {
+      store.pdfSlick?.eventBus.dispatch("beforeprint", { source: window });
+    };
+    window.onafterprint = (e) => {
+      store.pdfSlick?.eventBus.dispatch("afterprint", { source: window });
+    };
+    return () => {
+      window.onbeforeprint = null;
+      window.onafterprint = null;
+    };
+  }, [store.pdfSlick?.eventBus]);
 
   return (
     <div className="pdfSlick">
@@ -54,7 +50,6 @@ const PdfViewer = ({ pdfFilePath }: Props) => {
       >
         <PDFSlickViewer {...{ viewerRef, usePDFSlickStore }} />
       </div>
-      <div id="printContainer" />
     </div>
   );
 };

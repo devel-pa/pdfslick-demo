@@ -23,7 +23,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "postinstall": "patch-package"
   },
   "eslintConfig": {
     "extends": [
@@ -56,6 +57,7 @@
     "@storybook/react-webpack5": "^8.2.5",
     "@storybook/test": "^8.2.5",
     "eslint-plugin-storybook": "^0.8.0",
+    "patch-package": "^8.0.0",
     "prop-types": "^15.8.1",
     "storybook": "^8.2.5",
     "storybook-addon-mock": "^5.0.0",
